@@ -7513,8 +7513,214 @@ a.anchor-link {
 <main><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput" id="cell-id=4f579258">
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput" id="cell-id=1add6442">
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput" id="cell-id=06bcfe13">
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput" id="cell-id=ad4c00fb">
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs jp-mod-noInput" id="cell-id=93bb8bf9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noInput" id="cell-id=ad4c00fb">
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>'Events'</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>| column_name   | data_type   |
+|:--------------|:------------|
+| id            | character   |
+| pubkey        | character   |
+| created_at    | bigint      |
+| kind          | integer     |
+| tags          | jsonb       |
+| content       | text        |
+| sig           | character   |
+
+
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>'Events_relays'</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>| column_name   | data_type   |
+|:--------------|:------------|
+| event_id      | character   |
+| relay_url     | text        |
+| seen_at       | bigint      |
+
+
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>'Relay_metadata'</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>| column_name        | data_type   |
+|:-------------------|:------------|
+| relay_url          | text        |
+| generated_at       | bigint      |
+| connection_success | boolean     |
+| nip11_success      | boolean     |
+| openable           | boolean     |
+| readable           | boolean     |
+| writable           | boolean     |
+| rtt_open           | integer     |
+| rtt_read           | integer     |
+| rtt_write          | integer     |
+| name               | text        |
+| description        | text        |
+| banner             | text        |
+| icon               | text        |
+| pubkey             | text        |
+| contact            | text        |
+| supported_nips     | jsonb       |
+| software           | text        |
+| version            | text        |
+| privacy_policy     | text        |
+| terms_of_service   | text        |
+| limitation         | jsonb       |
+| extra_fields       | jsonb       |
+
+
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>'Relays'</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>| column_name   | data_type   |
+|:--------------|:------------|
+| url           | text        |
+| network       | text        |
+| inserted_at   | bigint      |
+
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noInput" id="cell-id=93bb8bf9">
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>📊 Analisi dello spazio per tabella:
+
+🧾 TABELLA: events
+Numero righe: 208570390
+Colonna               Avg (bytes)  Totale (GB)
+id                          65.00        12.63
+pubkey                      65.00        12.63
+created_at                   8.00         1.55
+kind                         4.00         0.78
+tags                       290.18        56.37
+content                    357.26        69.40
+sig                        132.00        25.64
+Totale dati stimati: 178.99 GB
+
+📦 Indici:
+Indice                            Size (GB)
+events_pkey                           24.26
+idx_events_pubkey                      4.39
+idx_events_created_at                  3.56
+idx_events_kind                        1.71
+idx_events_kind_created_at             6.60
+Totale indici: 40.53 GB
+Totale complessivo stimato: 219.51 GB
+
+────────────────────────────────────────────────────────────
+🧾 TABELLA: relays
+Numero righe: 8865
+Colonna               Avg (bytes)  Totale (GB)
+url                         30.61         0.00
+network                      8.48         0.00
+inserted_at                  8.00         0.00
+Totale dati stimati: 0.00 GB
+
+📦 Indici:
+Indice                            Size (GB)
+relays_pkey                            0.00
+Totale indici: 0.00 GB
+Totale complessivo stimato: 0.00 GB
+
+────────────────────────────────────────────────────────────
+🧾 TABELLA: events_relays
+Numero righe: 976421766
+Colonna               Avg (bytes)  Totale (GB)
+event_id                    65.00        59.11
+relay_url                   24.65        22.41
+seen_at                      8.00         7.27
+Totale dati stimati: 88.79 GB
+
+📦 Indici:
+Indice                            Size (GB)
+events_relays_pkey                   143.76
+idx_events_relays_event_id            32.73
+idx_events_relays_relay_url            6.10
+idx_events_relays_seen_at              9.46
+Totale indici: 192.06 GB
+Totale complessivo stimato: 280.86 GB
+
+────────────────────────────────────────────────────────────
+🧾 TABELLA: relay_metadata
+Numero righe: 74274
+Colonna               Avg (bytes)  Totale (GB)
+relay_url                   34.33         0.00
+generated_at                 8.00         0.00
+connection_success           1.00         0.00
+nip11_success                1.00         0.00
+openable                     1.00         0.00
+readable                     1.00         0.00
+writable                     1.00         0.00
+rtt_open                     4.00         0.00
+rtt_read                     4.00         0.00
+rtt_write                    4.00         0.00
+name                        21.03         0.00
+description                 46.50         0.00
+banner                       1.58         0.00
+icon                        52.58         0.00
+pubkey                      61.49         0.00
+contact                     21.30         0.00
+supported_nips              41.52         0.00
+software                    42.01         0.00
+version                      7.37         0.00
+privacy_policy              28.39         0.00
+terms_of_service            24.72         0.00
+limitation                 118.19         0.01
+extra_fields                54.23         0.00
+Totale dati stimati: 0.04 GB
+
+📦 Indici:
+Indice                            Size (GB)
+relay_metadata_pkey                    0.01
+idx_relay_metadata_relay_url           0.00
+idx_relay_metadata_generated_at         0.00
+idx_relay_metadata_connection_success         0.00
+idx_relay_metadata_nip11_success         0.00
+Totale indici: 0.01 GB
+Totale complessivo stimato: 0.05 GB
+
+────────────────────────────────────────────────────────────
+</pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 </main>
 </body>
