@@ -1,5 +1,7 @@
 import os
+import sys
 import psycopg2
+import numpy as np
 import pandas as pd
 import polars as pl
 from dotenv import load_dotenv
@@ -94,9 +96,59 @@ def generate_relay_event_count_csv(data_folder, bigbrotr):
         print("relay_event_count.csv already exists.")
 
 
+def generate_pubkey_rw_relay_csv(data_folder, bigbrotr):
+    """Generate pubkey_rw_relay.csv if it does not exist."""
+    def process_10002_tags(tags):
+        result = []
+        for tag in tags:
+            try:
+                taglen = len(tag)
+                if tag[0] == 'r' and taglen in [2, 3]:
+                    relay_url = Relay(tag[1]).url
+                    if taglen == 2:
+                        result.append([relay_url, True, True])
+                    elif taglen == 3 and (tag[2] == 'read' or tag[2] == 'write'):
+                        result.append(
+                            [relay_url, tag[2] == 'read', tag[2] == 'write'])
+            except (ValueError, TypeError):
+                continue
+        return result
+    if 'pubkey_rw_relay.csv' not in os.listdir(data_folder):
+        query = """
+        SELECT DISTINCT ON (pubkey) pubkey, tags
+        FROM events
+        WHERE kind = 10002
+        ORDER BY pubkey, created_at DESC;
+        """
+        with bigbrotr.cursor() as cursor:
+            cursor.execute(query)
+            events = cursor.fetchall()
+        events_df = pd.DataFrame(events, columns=['pubkey', 'tags'])
+        events_df['tags'] = events_df['tags'].apply(process_10002_tags)
+        events_df = events_df.explode('tags')
+        events_df['relay_url'] = events_df['tags'].apply(
+            lambda x: x[0] if isinstance(x, list) else np.nan)
+        events_df['read'] = events_df['tags'].apply(
+            lambda x: x[1] if isinstance(x, list) else np.nan)
+        events_df['write'] = events_df['tags'].apply(
+            lambda x: x[2] if isinstance(x, list) else np.nan)
+        events_df = events_df.drop(columns=['tags'])
+        events_df = events_df.dropna().drop_duplicates()
+        events_df = events_df.groupby(['pubkey', 'relay_url']).aggregate(
+            {'read': 'any', 'write': 'any'}).reset_index()
+        events_df.to_csv(os.path.join(
+            data_folder, 'pubkey_rw_relay.csv'), index=False)
+        print("pubkey_rw_relay.csv generated.")
+    else:
+        print("pubkey_rw_relay.csv already exists.")
+
+
 if __name__ == "__main__":
     load_dotenv()
     DATA_FOLDER = os.getenv("DATA_FOLDER")
+    LIB_FOLDER = os.getenv("LIB_FOLDER")
+    sys.path.append(LIB_FOLDER)
+    from relay import Relay
     bigbrotr = psycopg2.connect(
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT"),
@@ -108,4 +160,5 @@ if __name__ == "__main__":
     generate_events_csv(DATA_FOLDER, bigbrotr)
     generate_relays_events_csv(DATA_FOLDER, bigbrotr)
     generate_relay_event_count_csv(DATA_FOLDER, bigbrotr)
+    generate_pubkey_rw_relay_csv(DATA_FOLDER, bigbrotr)
     bigbrotr.close()
