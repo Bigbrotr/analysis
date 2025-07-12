@@ -75,13 +75,16 @@ def generate_relay_event_count_csv(data_folder, bigbrotr):
         relay_event_count = relays_events.group_by('relay_url').agg(
             pl.count('event_id').alias('event_count')).sort('event_count', descending=True)
         query = """
-        SELECT relay_url, network
+        SELECT
+            url AS relay_url,
+            network
         FROM relays
         """
         with bigbrotr.cursor() as cursor:
             cursor.execute(query)
             rows = cursor.fetchall()
-        relays = pl.DataFrame(rows, schema=['relay_url', 'network'])
+        relays = pl.DataFrame(
+            rows, schema=['relay_url', 'network'], orient='row')
         relay_event_count = relay_event_count.join(
             relays, on='relay_url', how='left')
         relay_event_count.write_csv(os.path.join(
