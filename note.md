@@ -1,0 +1,4 @@
+- pubkey followers: cdf del numero di followers per pubkey
+- correlazione tra eventi pubblicati e follower per pubkey. vedere quali e quante pubkey hanno tanti followers e pubblicano tanto (ele altre tre possibilita')
+- pubkey nei relays
+- event resilience
