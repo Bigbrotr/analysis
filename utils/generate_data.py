@@ -230,6 +230,10 @@ def generate_pubkey_stats_csv(data_folder):
             on="pubkey",
             how="left"
         )
+        pubkey_stats = pubkey_stats.with_columns(
+            pl.col('followers_count').fill_null(0),
+            pl.col('following_count').fill_null(0)
+        )
         pubkey_stats.write_csv(os.path.join(data_folder, 'pubkey_stats.csv'))
         print("pubkey_stats.csv generated.")
     else:
