@@ -75,7 +75,7 @@ def generate_relay_event_count_csv(data_folder, bigbrotr):
         relays_events = pl.read_csv(
             os.path.join(data_folder, 'events_relays.csv'))
         relay_event_count = relays_events.group_by('relay_url').agg(
-            pl.len('event_id').alias('event_count')).sort('event_count', descending=True)
+            pl.count('event_id').alias('event_count')).sort('event_count', descending=True)
         query = """
         SELECT
             url AS relay_url,
