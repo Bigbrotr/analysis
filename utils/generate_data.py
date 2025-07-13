@@ -75,7 +75,7 @@ def generate_relay_event_count_csv(data_folder, bigbrotr):
         relays_events = pl.read_csv(
             os.path.join(data_folder, 'events_relays.csv'))
         relay_event_count = relays_events.group_by('relay_url').agg(
-            pl.count('event_id').alias('event_count')).sort('event_count', descending=True)
+            pl.len('event_id').alias('event_count')).sort('event_count', descending=True)
         query = """
         SELECT
             url AS relay_url,
@@ -120,6 +120,7 @@ def generate_pubkey_follow_pubkey_csv(data_folder, bigbrotr):
         events_df = events_df.explode('following')
         events_df = events_df.rename(
             columns={'pubkey': 'pubkey_src', 'following': 'pubkey_dst'})
+        events_df = events_df.drop_duplicates()
         events_df.to_csv(os.path.join(
             data_folder, 'pubkey_follow_pubkey.csv'), index=False)
         print("pubkey_follow_pubkey.csv generated.")
@@ -174,6 +175,67 @@ def generate_pubkey_rw_relay_csv(data_folder, bigbrotr):
         print("pubkey_rw_relay.csv already exists.")
 
 
+def generate_pubkey_stats_csv(data_folder):
+    """Generate pubkey_stats.csv if it does not exist."""
+    if 'pubkey_stats.csv' not in os.listdir(data_folder):
+        events = pl.read_csv(os.path.join(data_folder, 'events.csv'))
+        pubkey_follow_pubkey = pl.read_csv(
+            os.path.join(data_folder, 'pubkey_follow_pubkey.csv'))
+        pubkey_rw_relay = pl.read_csv(
+            os.path.join(data_folder, 'pubkey_rw_relay.csv'))
+        pubkey_stats = (
+            events
+            .sort(["pubkey", "created_at"])
+            .group_by("pubkey")
+            .agg([
+                pl.len().alias("event_count"),
+                pl.min("created_at").alias("first_eventdate"),
+                pl.max("created_at").alias("last_eventdate"),
+                pl.col("created_at").diff().alias("intervals")
+            ])
+            .explode("intervals")
+            .group_by("pubkey")
+            .agg([
+                pl.first("event_count"),
+                pl.first("first_eventdate"),
+                pl.first("last_eventdate"),
+                (pl.first("last_eventdate") -
+                 pl.first("first_eventdate")).alias("lifespan"),
+                pl.mean("intervals").alias("mean_interval"),
+                pl.median("intervals").alias("median_interval"),
+                pl.std("intervals").alias("std_interval")
+            ])
+        )
+        pubkey_stats = pubkey_stats.join(
+            pubkey_rw_relay.group_by("pubkey").agg([
+                (pl.when(pl.col("read")).then(1).otherwise(
+                    0).sum().alias("read_relay_count")),
+                (pl.when(pl.col("write")).then(1).otherwise(
+                    0).sum().alias("write_relay_count"))
+            ]),
+            on="pubkey",
+            how="left"
+        )
+        pubkey_stats = pubkey_stats.join(
+            pubkey_follow_pubkey.group_by("pubkey_src").agg([
+                pl.count("pubkey_dst").alias("following_count")
+            ]).rename({"pubkey_src": "pubkey"}),
+            on="pubkey",
+            how="left"
+        )
+        pubkey_stats = pubkey_stats.join(
+            pubkey_follow_pubkey.group_by("pubkey_dst").agg([
+                pl.count("pubkey_src").alias("followers_count")
+            ]).rename({"pubkey_dst": "pubkey"}),
+            on="pubkey",
+            how="left"
+        )
+        pubkey_stats.write_csv(os.path.join(data_folder, 'pubkey_stats.csv'))
+        print("pubkey_stats.csv generated.")
+    else:
+        print("pubkey_stats.csv already exists.")
+
+
 if __name__ == "__main__":
     load_dotenv()
     DATA_FOLDER = os.getenv("DATA_FOLDER")
@@ -193,4 +255,6 @@ if __name__ == "__main__":
     generate_relay_event_count_csv(DATA_FOLDER, bigbrotr)
     generate_pubkey_follow_pubkey_csv(DATA_FOLDER, bigbrotr)
     generate_pubkey_rw_relay_csv(DATA_FOLDER, bigbrotr)
+    generate_pubkey_stats_csv(DATA_FOLDER)
+    print("All data files generated successfully.")
     bigbrotr.close()
