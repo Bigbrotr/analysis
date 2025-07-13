@@ -96,6 +96,37 @@ def generate_relay_event_count_csv(data_folder, bigbrotr):
         print("relay_event_count.csv already exists.")
 
 
+def generate_pubkey_follow_pubkey_csv(data_folder, bigbrotr):
+    """Generate pubkey_follow_pubkey.csv if it does not exist."""
+    def process_tags_3(tags):
+        result = set()
+        for tag in tags:
+            if len(tag) >= 2 and tag[0] == 'p' and len(tag[1]) == 64:
+                result.add(tag[1])
+        return list(result)
+    if 'pubkey_follow_pubkey.csv' not in os.listdir(data_folder):
+        query = """
+        SELECT DISTINCT ON (pubkey) pubkey, tags
+        FROM events
+        WHERE kind = 3
+        ORDER BY pubkey, created_at DESC;
+        """
+        with bigbrotr.cursor() as cursor:
+            cursor.execute(query)
+            events = cursor.fetchall()
+        events_df = pd.DataFrame(events, columns=['pubkey', 'tags'])
+        events_df['following'] = events_df['tags'].apply(process_tags_3)
+        events_df = events_df.drop(columns=['tags'])
+        events_df = events_df.explode('following')
+        events_df = events_df.rename(
+            columns={'pubkey': 'pubkey_src', 'following': 'pubkey_dst'})
+        events_df.to_csv(os.path.join(
+            data_folder, 'pubkey_follow_pubkey.csv'), index=False)
+        print("pubkey_follow_pubkey.csv generated.")
+    else:
+        print("pubkey_follow_pubkey.csv already exists.")
+
+
 def generate_pubkey_rw_relay_csv(data_folder, bigbrotr):
     """Generate pubkey_rw_relay.csv if it does not exist."""
     def process_10002_tags(tags):
@@ -103,7 +134,7 @@ def generate_pubkey_rw_relay_csv(data_folder, bigbrotr):
         for tag in tags:
             try:
                 taglen = len(tag)
-                if tag[0] == 'r' and taglen in [2, 3]:
+                if taglen in [2, 3] and tag[0] == 'r':
                     relay_url = Relay(tag[1]).url
                     if taglen == 2:
                         result.append([relay_url, True, True])
@@ -160,5 +191,6 @@ if __name__ == "__main__":
     generate_events_csv(DATA_FOLDER, bigbrotr)
     generate_relays_events_csv(DATA_FOLDER, bigbrotr)
     generate_relay_event_count_csv(DATA_FOLDER, bigbrotr)
+    generate_pubkey_follow_pubkey_csv(DATA_FOLDER, bigbrotr)
     generate_pubkey_rw_relay_csv(DATA_FOLDER, bigbrotr)
     bigbrotr.close()
