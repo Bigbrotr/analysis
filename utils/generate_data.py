@@ -57,8 +57,8 @@ def generate_events_csv(data_folder, bigbrotr):
         print("events.csv already exists.")
 
 
-def generate_relays_events_csv(data_folder, bigbrotr):
-    """Generate relays_events.csv if it does not exist."""
+def generate_events_relays_csv(data_folder, bigbrotr):
+    """Generate events_relays.csv if it does not exist."""
     if "events_relays.csv" not in os.listdir(data_folder):
         with bigbrotr.cursor() as cur:
             with open(os.path.join(data_folder, 'events_relays.csv'), 'w') as f:
@@ -67,33 +67,6 @@ def generate_relays_events_csv(data_folder, bigbrotr):
         print("events_relays.csv generated.")
     else:
         print("events_relays.csv already exists.")
-
-
-def generate_relay_event_count_csv(data_folder, bigbrotr):
-    """Generate relay_event_count.csv if it does not exist."""
-    if 'relay_event_count.csv' not in os.listdir(data_folder):
-        relays_events = pl.read_csv(
-            os.path.join(data_folder, 'events_relays.csv'))
-        relay_event_count = relays_events.group_by('relay_url').agg(
-            pl.count('event_id').alias('event_count')).sort('event_count', descending=True)
-        query = """
-        SELECT
-            url AS relay_url,
-            network
-        FROM relays
-        """
-        with bigbrotr.cursor() as cursor:
-            cursor.execute(query)
-            rows = cursor.fetchall()
-        relays = pl.DataFrame(
-            rows, schema=['relay_url', 'network'], orient='row')
-        relay_event_count = relay_event_count.join(
-            relays, on='relay_url', how='left')
-        relay_event_count.write_csv(os.path.join(
-            data_folder, 'relay_event_count.csv'))
-        print("relay_event_count.csv generated.")
-    else:
-        print("relay_event_count.csv already exists.")
 
 
 def generate_pubkey_follow_pubkey_csv(data_folder, bigbrotr):
@@ -173,6 +146,47 @@ def generate_pubkey_rw_relay_csv(data_folder, bigbrotr):
         print("pubkey_rw_relay.csv generated.")
     else:
         print("pubkey_rw_relay.csv already exists.")
+
+
+def generate_relay_stats_csv(data_folder):
+    # TODO: add all relay_metadata information to relay_stats.csv
+    """Generate relay_stats.csv if it does not exist."""
+    if 'relay_stats.csv' not in os.listdir(data_folder):
+        events_relays = pl.read_csv(
+            os.path.join(DATA_FOLDER, 'events_relays.csv'))
+        events = pl.read_csv(os.path.join(
+            DATA_FOLDER, 'events.csv')).rename({'id': 'event_id'})
+        events_relays = events_relays.join(events, on='event_id', how='left')
+        relay_stats = events_relays.group_by("relay_url").agg([
+            pl.col("event_id").n_unique().alias("num_events"),
+            pl.col("pubkey").n_unique().alias("num_pubkeys"),
+            pl.col("created_at").min().alias("first_eventdate"),
+            pl.col("created_at").max().alias("last_eventdate")
+        ])
+        nunique_pubkeys = events_relays.select(
+            pl.col("pubkey").n_unique()).to_numpy()[0][0]
+        nunique_events = events_relays.select(
+            pl.col("event_id").n_unique()).to_numpy()[0][0]
+        relay_stats = relay_stats.with_columns([
+            (pl.col("num_events") / nunique_events * 100).alias("pct_events"),
+            (pl.col("num_pubkeys") / nunique_pubkeys * 100).alias("pct_pubkeys"),
+        ])
+        query = """
+        SELECT
+            url AS relay_url,
+            network
+        FROM relays
+        """
+        with bigbrotr.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+        relays = pl.DataFrame(
+            rows, schema=['relay_url', 'network'], orient='row')
+        relay_stats = relay_stats.join(relays, on='relay_url', how='left')
+        relay_stats.write_csv(os.path.join(DATA_FOLDER, 'relay_stats.csv'))
+        print("relay_stats.csv generated.")
+    else:
+        print("relay_stats.csv already exists.")
 
 
 def generate_pubkey_stats_csv(data_folder):
@@ -255,10 +269,10 @@ if __name__ == "__main__":
     )
     generate_relay_synchronization_csv(DATA_FOLDER, bigbrotr)
     generate_events_csv(DATA_FOLDER, bigbrotr)
-    generate_relays_events_csv(DATA_FOLDER, bigbrotr)
-    generate_relay_event_count_csv(DATA_FOLDER, bigbrotr)
+    generate_events_relays_csv(DATA_FOLDER, bigbrotr)
     generate_pubkey_follow_pubkey_csv(DATA_FOLDER, bigbrotr)
     generate_pubkey_rw_relay_csv(DATA_FOLDER, bigbrotr)
+    generate_relay_stats_csv(DATA_FOLDER, bigbrotr)
     generate_pubkey_stats_csv(DATA_FOLDER)
     print("All data files generated successfully.")
     bigbrotr.close()
