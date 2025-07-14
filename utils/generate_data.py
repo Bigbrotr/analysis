@@ -148,7 +148,7 @@ def generate_pubkey_rw_relay_csv(data_folder, bigbrotr):
         print("pubkey_rw_relay.csv already exists.")
 
 
-def generate_relay_stats_csv(data_folder):
+def generate_relay_stats_csv(data_folder, bigbrotr):
     # TODO: add all relay_metadata information to relay_stats.csv
     """Generate relay_stats.csv if it does not exist."""
     if 'relay_stats.csv' not in os.listdir(data_folder):
@@ -190,6 +190,7 @@ def generate_relay_stats_csv(data_folder):
 
 
 def generate_pubkey_stats_csv(data_folder):
+    # TODO: add for example n_relay_coverage and other stats to pubkey_stats.csv
     """Generate pubkey_stats.csv if it does not exist."""
     if 'pubkey_stats.csv' not in os.listdir(data_folder):
         events = pl.read_csv(os.path.join(data_folder, 'events.csv'))
